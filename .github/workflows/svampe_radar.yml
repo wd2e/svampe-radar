@@ -1,0 +1,40 @@
+name: Svampe Radar Automatisering
+
+on:
+  schedule:
+    # Kører hver dag kl. 06:00 UTC (svarer til kl. 07:00 eller 08:00 dansk tid afhængig af sommertid)
+    - cron: '0 6 * * *'
+  workflow_dispatch: # Gør det muligt at starte scriptet manuelt med en knap
+
+jobs:
+  run-mushroom-script:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write # Giver GitHub Actions lov til at gemme HTML-kortet i repoet
+
+    steps:
+      - name: Hent kildekode
+        uses: actions/checkout@v4
+
+      - name: Opsæt Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+
+      - name: Installer afhængigheder
+        run: |
+          pip install -r requirements.txt
+
+      - name: Kør Svampe Radar
+        env:
+          TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: python main.py
+
+      - name: Gem det interaktive kort (svampe_kort.html)
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git add svampe_kort.html
+          git commit -m "Opdater svampe_kort.html via GitHub Actions" || exit 0
+          git push
